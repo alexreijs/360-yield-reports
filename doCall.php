@@ -16,7 +16,7 @@ function doCall($requestURI, $token) {
 
 	curl_close ($ch);
 
-	echo $server_output;
+	return json_decode($server_output);
 
 }
 
@@ -28,7 +28,7 @@ if (isSet($argv[1])) {
 	$requestURI = $argv[1];
 
 	if ($token)
-	        echo doCall($requestURI, $token);
+		return doCall($requestURI, $token);
 
 }
 

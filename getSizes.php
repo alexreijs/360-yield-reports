@@ -6,7 +6,7 @@ $token = getToken();
 $requestURI = '/common/v1/sizes';
 
 if ($token)
-        echo doCall($requestURI, $token);
+        print_r(doCall($requestURI, $token));
 
 ?>
 

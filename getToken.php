@@ -1,6 +1,6 @@
 <?php
 
-function getToken() {
+function getToken($verbose = true) {
 
 	print("Checking for existing token file\n");
 
