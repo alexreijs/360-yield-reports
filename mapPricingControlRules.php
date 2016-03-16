@@ -21,6 +21,15 @@ function cache360YieldObject($objectName, $apiURL) {
 	}
 }
 
+function getObjectById($objects, $id) {
+	foreach ($objects as $index => $object) {
+		if (isSet($object['id'])) {
+			if ($object['id'] == $id)
+				return $object;
+		}
+	}
+}
+
 function get360YieldData() {
 
 	$_SESSION['token'] = getToken($verbose = false);
@@ -48,16 +57,18 @@ function get360YieldData() {
 
 
 		print("Getting pricing rules and looping over them..\n");
-		$pricingRules = doCall('/publisher/v1/pricing-control-rules?limit=1&offset=100', $_SESSION['token']);
+		$pricingRules = doCall('/publisher/v1/pricing-control-rules?limit=10&offset=100', $_SESSION['token']);
 
 
 		//print_r($pricingRules);
 
 		foreach($pricingRules['pricing_control_rules'] as $pricingRuleIndex => $pricingRule) {
-			foreach ($pricingRule['placements'] as $placementIndex => $placementId) {
-				if (!isSet($placements[$placementId])) {
-					print("Getting placement ID: " . $placementId. "..\n");
-					$placements[$placementId] = doCall('/publisher/v1/sites/zones/placements/' . $placementId, $_SESSION['token']);
+			if(isSet($pricingRule['placements'])) {
+				foreach ($pricingRule['placements'] as $placementIndex => $placementId) {
+					if (!isSet($placements[$placementId])) {
+						print("Getting placement ID: " . $placementId. "..\n");
+						$placements[$placementId] = doCall('/publisher/v1/sites/zones/placements/' . $placementId, $_SESSION['token']);
+					}
 				}
 			}
 
@@ -112,18 +123,18 @@ function prepareCypherStatements() {
 
 	foreach ($pricingRules as $pricingRulesIndex => $pricingRule) {
 		foreach($yieldObjects as $yieldObjectsIndex => $yieldObject) {
-			if (isSet($pricingRule[$yieldObjectsIndex]) && count($yieldObject['statementData']) == 0) {
+			if (isSet($pricingRule[$yieldObjectsIndex]) && $yieldObjectsIndex != 'pricingRules') {
 				foreach ($pricingRule[$yieldObjectsIndex] as $ruleObjectIndex => $ruleObject) {
-						$yieldObjects[$yieldObjectsIndex]['statementData'][$ruleObject] = $yieldObjects[$yieldObjectsIndex]['allData'][$ruleObject];
+					$yieldObjects[$yieldObjectsIndex]['statementData'][$ruleObject] = getObjectById($yieldObjects[$yieldObjectsIndex]['allData'], $ruleObject);
 				}
 			}
 		}
 	}
 
-	foreach($yieldObjects as $objectArrayIndex => $objectArray) {
-		foreach($objectArray['statementData'] as $objectDataIndex => $objectData) {
+	foreach($yieldObjects as $yieldObjectsIndex => $yieldObject) {
+		foreach($yieldObject['statementData'] as $objectDataIndex => $objectData) {
 			$fields = [];
-			foreach ($objectArray['fields'] as $objectFieldsIndex => $objectField) {
+			foreach ($yieldObject['fields'] as $objectFieldsIndex => $objectField) {
 				if (isSet($objectData[$objectField])) {
 					$quote = is_numeric($objectData[$objectField]) ? '' : '"';
 					array_push($fields, $objectField . ' : ' . $quote . $objectData[$objectField] . $quote);
@@ -132,29 +143,33 @@ function prepareCypherStatements() {
 					print("Could not find index " . $objectField . " for object: " . $objectDataIndex . "\n");
 			}
 
-			array_push($statements, "CREATE (" . $objectArrayIndex . "_" .  $objectData['id'] . ":" . $objectArray['name'] . " { " . implode(', ', $fields) . " })");
+			array_push($statements, "CREATE (" . $yieldObjectsIndex. "_" .  $objectData['id'] . ":" . $yieldObject['name'] . " { " . implode(', ', $fields) . " })");
 		}
 	}
 
-	print_r($pricingRules);
+	//print_r($yieldObjects['sizes']);
+	//print_r($pricingRules);
 
         foreach ($pricingRules as $pricingRulesIndex => $pricingRule) {
 		foreach($yieldObjects as $yieldObjectsIndex => $yieldObject) {
-			$yieldObjectData = $yieldObject['statementData'];
+			$yieldObjectStatementData = $yieldObject['statementData'];
 			if(isSet($pricingRule[$yieldObjectsIndex])) {
 				foreach ($pricingRule[$yieldObjectsIndex] as $pricingRuleObjectsIndex => $pricingRuleObject) {
 					array_push($statements, "\tCREATE (pricingRules_" . $pricingRule['id'] . ")-[:APPLIES_TO]->(" . $yieldObjectsIndex . "_" . $pricingRuleObject . ")");
 				}
 			}
+			//foreach ($yieldObjectStatementData as $yieldObjectDataIndex => $yieldObjectData) {
+			//		array_push($statements, "\tCREATE (pricingRules_" . $pricingRule['id'] . ")-[:APPLIES_TO]->(" . $yieldObjectsIndex . "_" . $yieldObjectDataIndex . ")");
+			//}
 		}
 	}
 	return $statements;
 }
 
 
-//get360YieldData();
+get360YieldData();
 $statements = prepareCypherStatements();
 
-//echo implode("\n", $statements) . "\n";
+echo implode("\n", $statements) . "\n";
 
 ?>
