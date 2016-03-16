@@ -16,7 +16,7 @@ function doCall($requestURI, $token) {
 
 	curl_close ($ch);
 
-	return json_decode($server_output);
+	return json_decode($server_output, true);
 
 }
 
