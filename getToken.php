@@ -60,16 +60,16 @@ function getTokenFromDisk() {
 
 function getTokenFromAPI() {
 
-	$baseURL = 'http://sandbox.api.360yield.com';
+	$baseURL = 'http://api.360yield.com';
 	$requestURI = '/auth/v1/token';
 	$timestamp = time();
 
 	$tokenURL = $baseURL . $requestURI;
 	$stringToSign = $tokenURL . $timestamp;
 
-	$hmac = hash_hmac("sha1", $stringToSign, $_SESSION['apiSecretKey'], true);
+	$hmac = hash_hmac("sha1", $stringToSign, $_SESSION['sandbox']['apiSecretKey'], true);
 	$signature = base64_encode($hmac);
-	$authorization =  $_SESSION['apiAccessKey'] . ':' . $signature;
+	$authorization =  $_SESSION['sandbox']['apiAccessKey'] . ':' . $signature;
 
 	$ch = curl_init(); 
 

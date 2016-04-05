@@ -2,7 +2,7 @@
 
 function doCall($requestURI, $token) {
 
-	$baseURL = 'http://sandbox.api.360yield.com';
+	$baseURL = 'http://api.360yield.com';
 
 	$callURL = $baseURL . $requestURI;
 
